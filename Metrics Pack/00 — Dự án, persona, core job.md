@@ -152,3 +152,70 @@ Kết luận cadence điền đủ nguyên mẫu; phần “vì” dựa trên t
 | Có ít nhất một counter-metric | Đạt | Tỷ lệ reopen/liên hệ lại bảo vệ chất lượng khi số ticket giải quyết tăng. |
 
 **Gate 3 đạt.** Các định nghĩa đủ cấu phần và nhất quán với cadence theo ticket. Cửa sổ activation một ca, QA và cửa sổ 7 ngày là giả định vận hành cần xác nhận bằng quy trình/dữ liệu thực tế; không có benchmark số nào được khẳng định.
+
+# 05 — Product Loop
+
+**Giả định cần xác nhận:** ticket mới được giao bên ngoài Agent; Agent có thể tạo bản nháp; hệ thống ticket lưu phản hồi và trạng thái xử lý. Workspace chưa xác nhận các khả năng này hoặc việc lưu lịch sử làm AI tốt hơn. Bản nháp AI là output hỗ trợ, không tự nó là value.
+
+## Hai chu kỳ liên tiếp
+
+| Bước | Chu kỳ 1 | Chu kỳ 2 |
+|---|---|---|
+| Natural trigger | Một ticket đến cần phản hồi được giao cho nhân viên. | Một ticket đến khác cần phản hồi được giao sau đó; đây là trigger mới từ công việc bên ngoài. |
+| Core action | Nhân viên rà soát/chỉnh sửa bản nháp rồi gửi phản hồi cuối cùng, trực tiếp trả lời ticket. | Nhân viên lặp lại hành vi đó trên ticket mới. |
+| Immediate value | Khách nhận phản hồi có hướng giải quyết sớm hơn; value chỉ được xác nhận khi `qualified_ticket_resolution` đạt tiêu chuẩn Phase 3. | Ticket thứ hai cũng chỉ tạo repeat value sau khi đạt cùng tiêu chuẩn chất lượng và cửa sổ xác nhận. |
+| Saved state / investment | **Theo giả định:** phản hồi, người gửi và trạng thái được lưu trong lịch sử ticket để tiếp tục xử lý ticket đó; không giả định dữ liệu này tự cải thiện AI. | **Theo giả định:** lịch sử của ticket thứ hai được lưu tương tự; nhân viên vẫn cần một ticket mới để có lý do hành động tiếp. |
+| Next natural trigger | Ticket đến tiếp theo cần phản hồi; trigger không phụ thuộc việc mở dashboard hay nhận notification. | Ticket mới tiếp theo tiếp tục mở ra cơ hội xử lý theo cùng cơ chế. |
+
+## Loại loop
+
+**Event-response.** Core action xuất hiện để phản ứng với ticket đến và lặp theo từng ticket, khớp dạng hành vi và cadence theo ticket ở mục 02; không phải thói quen theo lịch cố định.
+
+## Nếu bỏ notification
+
+Nhân viên vẫn có lý do tự nhiên để quay lại khi ticket mới được giao cần xử lý. Ticket mới là trigger bên ngoài của use case; notification chỉ giúp báo họ biết ticket đã đến, không tạo nhu cầu hỗ trợ và không phải value.
+
+## Metric hypothesis
+
+“**Nếu loop này hoạt động, metric NSM — số ticket duy nhất được giải quyết đạt tiêu chuẩn chất lượng trên mỗi nhân viên tuyến đầu — sẽ thay đổi theo hướng tăng trong các cohort ticket đến liên tiếp có cùng segment, sau khi từng ticket hoàn tất vòng đời và cửa sổ xác nhận 7 ngày, vì ticket mới tạo cơ hội phản hồi tự nhiên và chỉ những ticket thực sự được giải quyết có chất lượng mới được tính.**”
+
+Hướng tăng có nghĩa là nhiều ticket hơn đạt chuẩn value, không chỉ nhiều bản nháp hoặc phản hồi được gửi; cần đọc cùng counter-metric reopen/liên hệ lại để kiểm tra chất lượng. Khung 7 ngày là giả định ở mục 03, không phải benchmark.
+
+# 06 — Tracking nhanh
+
+**Giả định triển khai:** event dưới đây là đề xuất, không khẳng định workspace đang có instrumentation. Event gửi/đổi trạng thái chỉ phát sau khi thay đổi thực sự được xác nhận và lưu. Tên metric giữ nguyên theo mục 03–04.
+
+## Event plan
+
+| Tên event | Ý nghĩa | Thời điểm ghi nhận | Metric sử dụng |
+|---|---|---|---|
+| `actionable_ticket_assigned` | **Input:** ticket đến cần phản hồi đã được giao cho nhân viên. | Khi assignment được lưu và ticket xuất hiện trong hàng xử lý của nhân viên; mỗi ticket–assignee chỉ ghi một lần cho lần giao này. | Activation — Start event; Retention — Cohort entry; Engagement Breadth — mẫu số ticket được giao. |
+| `ai_draft_generated` | **AI output:** bản nháp đã được tạo đầy đủ và lưu/hiển thị cho ticket; không chứng minh nhân viên đã xem hoặc khách nhận value. | Khi output hoàn chỉnh được lưu cùng `ticket_id` và `draft_id`, không phải lúc bắt đầu gọi model. | Leading indicator: “Tỷ lệ ticket được giao có bản nháp AI được nhân viên đánh giá là liên quan và có căn cứ để rà soát” — xác định ticket có draft để đối chiếu; event này một mình không tính draft là usable. |
+| `ai_draft_reviewed` | **Human review:** nhân viên hoàn tất rà soát và ghi kết quả liên quan/có căn cứ hoặc không; đây là đánh giá draft, chưa phải core action. | Khi review disposition được lưu cho `draft_id`; chỉ ghi một kết quả hoàn tất cho mỗi draft version. | Leading indicator: “Tỷ lệ ticket được giao có bản nháp AI được nhân viên đánh giá là liên quan và có căn cứ để rà soát” — tử số là ticket có kết quả review đạt; mẫu số là ticket đủ điều kiện được giao. |
+| `support_response_sent` | **Core action:** phản hồi cuối cùng đã rà soát, trực tiếp trả lời yêu cầu và được gửi gắn với ticket. | Chỉ sau khi hệ thống xác nhận gửi thành công và lưu `response_id`; click gửi hoặc lỗi gửi không phát event. | Activation — Activation event; Engagement Breadth — tử số ticket có phản hồi gửi; Leading indicator — “Thời gian từ lúc giao ticket đến khi gửi phản hồi đã rà soát”. |
+| `ticket_resolved` | **State change:** ticket thực sự chuyển sang trạng thái resolved. Đây là điều kiện của NSM, chưa đủ để khẳng định value. | Khi trạng thái resolved được lưu; ghi nhận transition thực tế từ trạng thái chưa resolved. | NSM — điều kiện resolved; Counter-metric — mẫu số ticket resolved đủ 7 ngày theo dõi. |
+| `ticket_reopened` | **Counter:** ticket đã resolved thực sự chuyển lại sang trạng thái mở trong cửa sổ theo dõi. | Khi transition reopen được lưu; ghi một lần cho mỗi transition/ticket và giữ timestamp. | Counter-metric: “Tỷ lệ ticket bị mở lại hoặc khách liên hệ lại trong 7 ngày” — tử số đếm ticket duy nhất có ít nhất một lần reopen, không đếm số transition. |
+| `customer_recontact_received` | **Counter:** khách thực sự gửi liên hệ tiếp theo được liên kết với ticket đã resolved; không suy diễn từ trạng thái hoặc nội dung AI. | Khi hệ thống nhận và liên kết một liên hệ mới trong 7 ngày sau resolve; cần khả năng nối liên hệ qua kênh liên quan. | Counter-metric: “Tỷ lệ ticket bị mở lại hoặc khách liên hệ lại trong 7 ngày” — tử số ticket có recontact; một ticket chỉ tính một lần dù có nhiều liên hệ, reopen hoặc cả hai. |
+| `qualified_ticket_resolution` | **Derived value:** ticket đã resolved, QA xác nhận phản hồi liên quan/có căn cứ, và hết đủ 7 ngày không reopen hoặc recontact. Đây mới là event value; không đồng nhất với output AI hay `support_response_sent`. | Sau khi hết cửa sổ 7 ngày tính từ resolve, xác nhận đủ điều kiện QA và không có counter-event; ghi tối đa một lần cho mỗi `ticket_id`. | NSM — đếm ticket đạt chất lượng; Retention — Return event trên ticket tiếp theo. |
+
+## Khoảng trống tracking cần xử lý
+
+- Workspace chưa xác nhận có trường để nhân viên ghi nhận draft “liên quan và có căn cứ”, có quy trình QA, hoặc có nguồn dữ liệu liên kết recontact đa kênh. Nếu chưa có, cần bổ sung review disposition/QA và cơ chế nối ticket–liên hệ trước khi tính các leading indicator, NSM và counter-metric; không coi event draft/sent là proxy đã đủ.
+- `qualified_ticket_resolution` là event tổng hợp cần được phát sau khi đủ điều kiện Phase 3; không phát ngay khi ticket chuyển resolved. Cửa sổ 7 ngày vẫn là giả định cần xác nhận.
+
+## Tiêu chí nghiệm thu
+
+1. **Với mỗi `user_id`, `ticket_id` và `response_id`, khi nhân viên gửi phản hồi đã rà soát, chỉ ghi `support_response_sent` sau khi hệ thống xác nhận gửi thành công; lỗi gửi, click, reload hoặc retry cùng `response_id` không tạo event thành công trùng.**
+2. **Với mỗi `ticket_id`, khi ticket chuyển sang resolved, chỉ ghi `ticket_resolved` cho transition đã lưu; reload/autosave không tạo transition hoặc event thứ hai. `qualified_ticket_resolution` chỉ được ghi một lần sau đủ 7 ngày nếu QA đạt và không có `ticket_reopened`/`customer_recontact_received`; nếu thiếu điều kiện thì không ghi.**
+3. **Với mỗi `ticket_id` và `draft_id`, khi AI hoàn tất và lưu một draft version, ghi tối đa một `ai_draft_generated`; retry cùng generation id không tạo bản ghi trùng, còn generation lỗi/đang chạy thì không ghi event hoàn tất.**
+
+## Tự kiểm Gate 4
+
+| Điều kiện | Kết quả | Căn cứ |
+|---|---|---|
+| Loop có ít nhất hai chu kỳ và lý do quay lại không cần notification | Đạt | Hai ticket đến độc lập tạo hai chu kỳ; nhu cầu xử lý ticket mới là trigger tự nhiên, notification chỉ báo tin. |
+| Metric hypothesis trỏ tới metric Phase 3 | Đạt | Hypothesis nêu đúng NSM về ticket giải quyết đạt chuẩn trên mỗi nhân viên và dùng cửa sổ xác nhận Phase 3. |
+| Mọi event map tới ít nhất một metric Phase 3 | Đạt | Cột Metric sử dụng map cả 8 event tới Activation, Breadth, NSM, Leading indicators, Counter-metric hoặc Retention. |
+| Event chỉ ghi khi hành vi hoàn tất và có chống ghi trùng | Đạt | Thời điểm ghi nêu transition/điều kiện hoàn tất; tiêu chí nghiệm thu kiểm tra send success, đủ cửa sổ và idempotency. |
+
+**Gate 4 đạt**, với điều kiện các khoảng trống instrumentation nêu trên được giải quyết trước khi xem số liệu là đầy đủ.
