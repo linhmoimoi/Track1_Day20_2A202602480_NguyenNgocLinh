@@ -78,3 +78,77 @@ Core action có actor (nhân viên tuyến đầu), object (ticket/phản hồi 
 ## Kết luận Gate 2
 
 Kết luận cadence điền đủ nguyên mẫu; phần “vì” dựa trên trigger là ticket cần phản hồi và vai trò hỗ trợ của bản nháp AI. Nhịp **theo từng ticket ở cấp ticket** nhất quán với dạng **phản ứng theo sự kiện**. Gate 2 đạt. Quy trình lưu trạng thái và các phụ thuộc nêu trên là giả định cần xác nhận.
+
+# 03 — Metric System
+
+**Phạm vi:** Nhân viên tuyến đầu xử lý ticket đến bằng AI Customer Support Agent; core action là gửi phản hồi cuối cùng sau khi rà soát/chỉnh sửa bản nháp. Các event, cửa sổ và ngưỡng vận hành dưới đây là **đề xuất cần xác nhận** vì workspace chưa có SLA, dữ liệu ticket hay quy tắc QA.
+
+## Activation
+
+| Thành phần | Định nghĩa đề xuất |
+|---|---|
+| Start event | `actionable_ticket_assigned`: lần đầu nhân viên được giao một ticket đến cần phản hồi. Đây là lúc bắt đầu hành trình use case, không phải login/mở app. |
+| Activation event | `support_response_sent` đầu tiên: nhân viên đã rà soát/chỉnh sửa, gửi phản hồi trực tiếp trả lời ticket và phản hồi được lưu thành công. Đây là first core action; tự nó chưa chứng minh ticket có giá trị. |
+| Time window | Từ lúc start event đến hết ca làm việc đầu tiên của nhân viên. Đây là ngưỡng vận hành tạm tính, không phải SLA hay benchmark; cần xác nhận với lịch xử lý thực tế. |
+| Value confirmation | `qualified_ticket_resolution`: ticket được đánh dấu giải quyết, phản hồi đạt tiêu chuẩn chất lượng bên dưới và không bị mở lại/khách không liên hệ lại trong 7 ngày lịch sau khi giải quyết. Vì cần chờ kết quả và cửa sổ theo dõi, đây là xác nhận trễ; 7 ngày là giả định cần kiểm tra, không phải benchmark. |
+
+## Engagement — góc đo Breadth
+
+| Góc đo | Định nghĩa | Vì sao phù hợp |
+|---|---|---|
+| Breadth | Trong một cohort ticket được giao, tỷ lệ ticket đến cần phản hồi của nhân viên có `support_response_sent` sau rà soát: số ticket đủ điều kiện có phản hồi gửi thành công / tổng ticket đủ điều kiện được giao. Đếm ticket duy nhất, không đếm số lần sửa/gửi lại. | Ticket là đơn vị phát sinh nhu cầu tự nhiên ở mục 02. Đo độ phủ theo ticket tránh ép nhịp daily/weekly; độ phủ cao hơn chưa chắc tốt nếu chất lượng ticket giải quyết giảm. |
+
+## North Star Metric
+
+**NSM đề xuất:** Số **ticket duy nhất được giải quyết đạt tiêu chuẩn chất lượng trên mỗi nhân viên tuyến đầu, tính khi từng ticket hoàn tất vòng đời xử lý tự nhiên** (tổng hợp qua cohort ticket đến; không áp lịch ngày/tuần làm cadence chính).
+
+**Công thức:** `COUNT(DISTINCT ticket_id)` thỏa đồng thời: (1) nhân viên đã gửi phản hồi cuối cùng sau rà soát, trực tiếp trả lời yêu cầu và dựa trên thông tin sẵn có; (2) ticket được đánh dấu đã giải quyết; (3) kiểm tra QA xác nhận phản hồi liên quan và có căn cứ; (4) ticket không bị mở lại hoặc khách không liên hệ lại trong 7 ngày lịch sau khi giải quyết.
+
+- **Unit of value:** một ticket được giải quyết có chất lượng.
+- **Quality threshold:** đủ bốn điều kiện trên; tiêu chuẩn QA và cửa sổ 7 ngày là đề xuất cần xác nhận, không phải dữ kiện/benchmark đã biết.
+- **Frequency:** ghi nhận một lần khi kết thúc vòng đời ticket và hết cửa sổ xác nhận; báo cáo theo cohort ticket đến để giữ đúng nhịp theo từng ticket.
+- **Vì sao phản ánh value:** đo yêu cầu khách được giải quyết ổn định, không phải lượt hỏi AI hay số phản hồi đã gửi.
+
+## Leading indicators
+
+| Chỉ báo đề xuất | Vì sao có cơ sở dự báo action/value lặp lại |
+|---|---|
+| Tỷ lệ ticket được giao có bản nháp AI được nhân viên đánh giá là liên quan và có căn cứ để rà soát. | Bản nháp phù hợp có thể giảm thời gian tìm/soạn thông tin, giúp nhân viên tiến tới core action; cần định nghĩa cách ghi nhận đánh giá, không coi output AI tự thân là value. |
+| Thời gian từ lúc giao ticket đến khi gửi phản hồi đã rà soát, xem theo ticket. | Nếu thời gian giảm mà chất lượng giữ ổn định, có cơ sở cho thấy trở ngại tìm và kiểm tra thông tin giảm, giúp nhiều ticket được xử lý kịp hơn; tốc độ riêng lẻ không xác nhận value. |
+
+## Counter-metric
+
+| Chỉ số bảo vệ | Định nghĩa | Hướng xấu |
+|---|---|---|
+| Tỷ lệ ticket bị mở lại hoặc khách liên hệ lại trong 7 ngày | Số ticket đã đánh dấu giải quyết nhưng bị mở lại/khách liên hệ lại trong cửa sổ 7 ngày / tổng ticket đánh dấu giải quyết đã đủ 7 ngày theo dõi. Cửa sổ là giả định cần xác nhận. | Tăng lên; có thể cho thấy NSM tăng nhờ đóng ticket nhanh nhưng phản hồi chưa giải quyết đúng nhu cầu. |
+
+
+# 04 — Retention Definition
+
+**Định nghĩa đề xuất theo cơ hội ticket:** đo nhân viên tuyến đầu (actor ở mục 01), và chỉ xác định retention khi có cơ hội ticket tiếp theo; không xem thiếu ticket được giao là churn.
+
+| Thành phần | Câu trả lời |
+|---|---|
+| Unit | Nhân viên chăm sóc khách hàng tuyến đầu (user cá nhân). Actor thực hiện core action là nhân viên; ticket là object. Dùng định danh nhân viên ổn định để nối các ticket của cùng người. |
+| Cohort entry | `actionable_ticket_assigned` đầu tiên cho nhân viên trong use case; ticket cần phản hồi và được tính là cơ hội xử lý đầu tiên. |
+| Return event | `qualified_ticket_resolution` trên một ticket khác được giao sau cohort entry: phản hồi cuối cùng đã rà soát được gửi, ticket được giải quyết và đạt cùng tiêu chuẩn chất lượng ở mục 03. |
+| Window | Custom, theo cơ hội và vòng đời ticket: sau cohort entry, chờ đến khi có ticket đủ điều kiện tiếp theo; cửa sổ return của ticket đó kéo từ lúc được giao đến khi giải quyết và hết 7 ngày lịch xác nhận. Nếu chưa có ticket tiếp theo thì retention chưa quan sát được. 7 ngày là giả định cần xác nhận. |
+| Threshold | Ít nhất 1 ticket tiếp theo đạt `qualified_ticket_resolution` trong cửa sổ trên để tính retained. Chỉ đưa vào mẫu số những nhân viên có ticket tiếp theo đủ điều kiện; báo cáo riêng số người chưa có cơ hội return. |
+| Segment | Nhân viên tuyến đầu dùng AI Customer Support Agent để xử lý ticket đến và được giao ticket cần phản hồi; không gộp vai trò hay use case khác. |
+
+### Diễn giải retention theo ba mốc của lab
+
+- **Natural cycle:** đọc retention theo cơ hội ticket tiếp theo và vòng đời xử lý đến khi hoàn tất cửa sổ chất lượng; không gán D7 hay tuần cố định. Thời gian chờ ticket tiếp theo cần được giữ riêng, không tính là thất bại return.
+- **Cohort đúng segment:** so sánh cùng nhóm nhân viên tuyến đầu, cùng use case ticket đến và có cơ hội được giao ticket tiếp theo; tránh trộn nhóm không có cơ hội hành động.
+- **Benchmark category:** chỉ đối chiếu với benchmark có nguồn xác thực và cùng loại quy trình hỗ trợ, segment, event, ngưỡng chất lượng và cách xử lý cửa sổ; workspace chưa có nguồn nên không đặt con số benchmark.
+
+## Tự kiểm Gate 3
+
+| Điều kiện | Kết quả | Căn cứ |
+|---|---|---|
+| Activation có start event, activation event và time window | Đạt | Có ticket được giao làm start, phản hồi đầu tiên đã rà soát được gửi làm activation, và ngưỡng tạm tính là hết ca làm đầu tiên; ngưỡng cần xác nhận. |
+| Retention đủ sáu thành phần và khớp cadence mục 02 | Đạt | Đủ unit, cohort entry, return event, window, threshold, segment; return dựa trên ticket tiếp theo và value event theo nhịp từng ticket. |
+| NSM có unit of value, quality threshold và frequency | Đạt | Đếm ticket giải quyết đạt điều kiện QA/outcome, mỗi ticket một lần khi hết vòng đời và cửa sổ xác nhận. |
+| Có ít nhất một counter-metric | Đạt | Tỷ lệ reopen/liên hệ lại bảo vệ chất lượng khi số ticket giải quyết tăng. |
+
+**Gate 3 đạt.** Các định nghĩa đủ cấu phần và nhất quán với cadence theo ticket. Cửa sổ activation một ca, QA và cửa sổ 7 ngày là giả định vận hành cần xác nhận bằng quy trình/dữ liệu thực tế; không có benchmark số nào được khẳng định.
