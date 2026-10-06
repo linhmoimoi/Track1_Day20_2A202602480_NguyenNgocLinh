@@ -203,11 +203,27 @@ Hướng tăng có nghĩa là nhiều ticket hơn đạt chuẩn value, không c
 - Workspace chưa xác nhận có trường để nhân viên ghi nhận draft “liên quan và có căn cứ”, có quy trình QA, hoặc có nguồn dữ liệu liên kết recontact đa kênh. Nếu chưa có, cần bổ sung review disposition/QA và cơ chế nối ticket–liên hệ trước khi tính các leading indicator, NSM và counter-metric; không coi event draft/sent là proxy đã đủ.
 - `qualified_ticket_resolution` là event tổng hợp cần được phát sau khi đủ điều kiện Phase 3; không phát ngay khi ticket chuyển resolved. Cửa sổ 7 ngày vẫn là giả định cần xác nhận.
 
+## Thuộc tính event tối thiểu để tính metric
+
+| Event | Thuộc tính/join cần có |
+|---|---|
+| `actionable_ticket_assigned` | `event_id`, `assigned_at`, `ticket_id`, `user_id` (nhân viên được giao), và `shift_end_at` hoặc lịch ca để tính activation window. Cần để nối cohort, đo breadth và retention cùng actor. |
+| `ai_draft_generated` | `event_id`, `generated_at`, `ticket_id`, `draft_id`, `assigned_user_id` (để nối với nhân viên/cohort); dùng để nối output với ticket/review, không phải value. |
+| `ai_draft_reviewed` | `event_id`, `reviewed_at`, `review_id`, `ticket_id`, `draft_id`, `user_id`, `review_disposition` (liên quan/có căn cứ hoặc không). Tử số leading indicator đếm ticket duy nhất có ít nhất một review đạt. |
+| `support_response_sent` | `event_id`, `sent_at`, `ticket_id`, `response_id`, `review_id` (review đã hoàn tất), `draft_id` nếu dùng draft AI, `user_id`; cần nối cùng nhân viên với assignment, tính thời gian và đếm action một lần. |
+| `ticket_resolved` | `event_id`, `resolved_at`, `ticket_id`, `transition_id`; mẫu số counter chỉ tính ticket duy nhất đủ 7 ngày theo dõi. |
+| `ticket_reopened` | `event_id`, `occurred_at`, `ticket_id`, `transition_id`; metric đếm ticket duy nhất có ít nhất một lần reopen. |
+| `customer_recontact_received` | `event_id`, `received_at`, `ticket_id`, `contact_id` và nguồn liên kết contact–ticket; metric đếm ticket duy nhất, không đếm nhiều contact thành nhiều ticket. |
+| `qualified_ticket_resolution` | `event_id`, `confirmed_at`, `ticket_id`, `user_id` của nhân viên gửi phản hồi được tính, `resolved_at`, `qa_pass`; một event duy nhất cho mỗi ticket sau khi hết cửa sổ. |
+
+Các ID và timestamp này là yêu cầu cho schema đề xuất, chưa được xác nhận là đang được sản phẩm ghi. Thiếu identity/linkage, lịch ca, disposition QA hoặc liên kết recontact thì metric tương ứng chưa tính được tin cậy; nếu không có lịch ca, cửa sổ activation “hết ca làm đầu tiên” chưa thể tính.
+
 ## Tiêu chí nghiệm thu
 
-1. **Với mỗi `user_id`, `ticket_id` và `response_id`, khi nhân viên gửi phản hồi đã rà soát, chỉ ghi `support_response_sent` sau khi hệ thống xác nhận gửi thành công; lỗi gửi, click, reload hoặc retry cùng `response_id` không tạo event thành công trùng.**
+1. **Với mỗi `user_id`, `ticket_id` và `response_id`, khi nhân viên gửi phản hồi đã rà soát, chỉ ghi `support_response_sent` khi `review_id` đã hoàn tất và hệ thống xác nhận gửi thành công; lỗi gửi, click, reload hoặc retry cùng `response_id` không tạo event thành công trùng.**
 2. **Với mỗi `ticket_id`, khi ticket chuyển sang resolved, chỉ ghi `ticket_resolved` cho transition đã lưu; reload/autosave không tạo transition hoặc event thứ hai. `qualified_ticket_resolution` chỉ được ghi một lần sau đủ 7 ngày nếu QA đạt và không có `ticket_reopened`/`customer_recontact_received`; nếu thiếu điều kiện thì không ghi.**
 3. **Với mỗi `ticket_id` và `draft_id`, khi AI hoàn tất và lưu một draft version, ghi tối đa một `ai_draft_generated`; retry cùng generation id không tạo bản ghi trùng, còn generation lỗi/đang chạy thì không ghi event hoàn tất.**
+4. **Với mỗi `transition_id`/`contact_id`, chỉ ghi `ticket_reopened` hoặc `customer_recontact_received` sau khi transition/liên hệ thực sự được lưu và liên kết ticket; retry cùng ID không tạo event trùng. Counter-metric đếm ticket duy nhất, dù có nhiều lần liên hệ/reopen.**
 
 ## Tự kiểm Gate 4
 
@@ -219,3 +235,23 @@ Hướng tăng có nghĩa là nhiều ticket hơn đạt chuẩn value, không c
 | Event chỉ ghi khi hành vi hoàn tất và có chống ghi trùng | Đạt | Thời điểm ghi nêu transition/điều kiện hoàn tất; tiêu chí nghiệm thu kiểm tra send success, đủ cửa sổ và idempotency. |
 
 **Gate 4 đạt**, với điều kiện các khoảng trống instrumentation nêu trên được giải quyết trước khi xem số liệu là đầy đủ.
+
+# Chặng 5 — Tự soi lỗi & nộp bài lab
+
+## Checklist tự soi
+
+1. **Đạt** — Core action là nhân viên rà soát/chỉnh sửa và gửi phản hồi cuối cùng có căn cứ cho ticket; không phải thao tác giao diện hay output AI. `support_response_sent` chỉ ghi sau khi gửi thành công.
+2. **Đạt** — Activation bắt đầu từ ticket đủ điều kiện được giao và được xác nhận bằng core action đầu tiên; không dùng login/tour. Cửa sổ hết ca làm đầu tiên được ghi là giả định cần xác nhận; cần lịch ca hoặc `shift_end_at` để tính.
+3. **Đạt** — Hành vi phát sinh theo từng ticket cần phản hồi; cadence, NSM và retention đều dùng ticket-cycle/opportunity, không ép lịch dashboard.
+4. **Đạt** — Không cần notification để tạo nhu cầu quay lại: ticket mới được giao là trigger bên ngoài tự nhiên; notification chỉ báo tin.
+5. **Đạt** — Retention dùng cơ hội ticket tiếp theo của cùng nhân viên, cùng segment, với cửa sổ theo lifecycle và 7 ngày xác nhận; nếu chưa có ticket tiếp theo thì chưa kết luận churn. Cửa sổ 7 ngày là giả định.
+6. **Đạt** — Cả 8 event trong mục 06 map tới Activation, Engagement Breadth, NSM, Leading indicators, Counter-metric hoặc Retention ở mục 03–04.
+7. **Đã sửa** — Đã bổ sung các identity/join key, timestamp, review disposition, QA và liên kết contact cần thiết để tính các metric từ event set; schema và nguồn dữ liệu là đề xuất, chưa xác nhận đang được tracking.
+
+### Rationale cho lựa chọn giữ lại
+
+**Retention theo cơ hội ticket, không theo ngày/tuần:** giữ custom window vì ticket đến là trigger tự nhiên duy nhất có căn cứ trong workspace; tác động là retention chỉ đọc được khi cùng nhân viên có ticket tiếp theo và ticket đó hoàn tất cửa sổ chất lượng, còn không có cơ hội thì để trạng thái chưa quan sát thay vì churn.
+
+## Kết luận Gate 5
+
+**Gate 5 đạt.** Đã đối chiếu đủ 7 câu và xử lý khoảng trống về thuộc tính nối event để metric có thể tính theo định nghĩa. Không đổi core action, cadence, retention definition, metric hay event set; các event, QA, recontact và ngưỡng/cửa sổ và lịch ca cần thiết vẫn được ghi rõ là đề xuất/nguồn dữ liệu cần xác nhận, không xem là instrumentation đã tồn tại.
