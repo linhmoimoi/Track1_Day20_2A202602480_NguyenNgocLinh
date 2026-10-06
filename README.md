@@ -2,32 +2,25 @@
 
 - **Họ tên:** Nguyễn Ngọc Linh
 - **MHV:** 2A202602480
-- **Dự án chọn làm:** _Điền tên dự án_
-- **Metrics Pack:** [Mở thư mục Metrics Pack](./Metrics%20Pack/)
-- **AI support log:** [ai-support-log.md](./ai-support-log.md)
+- **Tên repo:** `Track1_Day20_2A202602480_NguyenNgocLinh`
+- **Dự án chọn làm:** AI Customer Support Agent giúp nhân viên chăm sóc khách hàng xử lý yêu cầu hỗ trợ
+- **Bản nộp Metrics Pack:** [Metrics Pack.md](./Metrics%20Pack.md)
+- **AI Support Log:** [ai-support-log.md](./ai-support-log.md)
 
 ## Cấu trúc repo
 
 ```text
 Track1_Day20_2A202602480_NguyenNgocLinh/
-├── README.md              # Họ tên, MHV, dự án chọn làm, link Metrics Pack
-├── ai-support-log.md
-└── Metrics Pack/
-    ├── 00 — Dự án, persona, core job.md
-    ├── 01 — Core Action Card.md
-    ├── 02 — Action Nature Card và cadence.md
-    ├── 03 — Metric System.md
-    ├── 04 — Retention Definition.md
-    ├── 05 — Product Loop.md
-    └── 06 — Tracking nhanh.md
+├── README.md
+├── Metrics Pack.md
+└── ai-support-log.md
 ```
 
-## Nội dung Metrics Pack
+## Điều tôi mang về áp dụng cho dự án thật
 
-1. [00 — Dự án, persona, core job](./Metrics%20Pack/00%20%E2%80%94%20D%E1%BB%B1%20%C3%A1n%2C%20persona%2C%20core%20job.md)
-2. [01 — Core Action Card](./Metrics%20Pack/01%20%E2%80%94%20Core%20Action%20Card.md)
-3. [02 — Action Nature Card và cadence](./Metrics%20Pack/02%20%E2%80%94%20Action%20Nature%20Card%20v%C3%A0%20cadence.md)
-4. [03 — Metric System](./Metrics%20Pack/03%20%E2%80%94%20Metric%20System.md)
-5. [04 — Retention Definition](./Metrics%20Pack/04%20%E2%80%94%20Retention%20Definition.md)
-6. [05 — Product Loop](./Metrics%20Pack/05%20%E2%80%94%20Product%20Loop.md)
-7. [06 — Tracking nhanh](./Metrics%20Pack/06%20%E2%80%94%20Tracking%20nhanh.md)
+**Bản nháp để người học xác nhận/chỉnh theo trải nghiệm thực tế:** Phân biệt phản hồi đã gửi (`support_response_sent`) với ticket được giải quyết đạt chuẩn (`qualified_ticket_resolution`). Khi áp dụng, theo dõi ticket bị mở lại hoặc khách liên hệ lại để kiểm tra chất lượng giải quyết, thay vì chỉ nhìn số phản hồi đã gửi. Tiêu chuẩn QA, cửa sổ theo dõi 7 ngày và nguồn dữ liệu liên kết vẫn cần xác nhận.
+
+## TODO trước khi nộp
+
+- Nếu biểu mẫu nộp bài yêu cầu URL chia sẻ bên ngoài repo: người học dán URL thật tại đây và tự kiểm tra quyền xem. Workspace hiện chưa có URL hoặc bằng chứng về quyền truy cập.
+- Người học xác nhận/chỉnh mục “Điều tôi mang về áp dụng cho dự án thật” theo trải nghiệm của mình và hoàn thành reflection cá nhân trong [ai-support-log.md](./ai-support-log.md).

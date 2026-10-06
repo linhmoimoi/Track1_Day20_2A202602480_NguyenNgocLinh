@@ -1,4 +1,4 @@
-# 00 — Phạm vi của tệp bạn
+# 00 — Dự án, persona, core job
 
 1. Dự án: AI Customer Support Agent giúp nhân viên chăm sóc khách hàng xử lý yêu cầu hỗ trợ.
 2. Persona: Nhân viên chăm sóc khách hàng tuyến đầu trực tiếp tiếp nhận và xử lý yêu cầu.
@@ -13,7 +13,7 @@
 | Core job | Xử lý nhiều yêu cầu hỗ trợ cùng lúc, tìm thông tin để trả lời chính xác và giảm thời gian khách phải chờ. |
 | Core action | Nhân viên rà soát/chỉnh sửa rồi gửi phản hồi cuối cùng, trực tiếp trả lời yêu cầu và gắn với ticket. |
 | Core value | Nhân viên xử lý yêu cầu nhanh hơn với phản hồi chính xác, giúp khách nhận được hướng giải quyết. |
-| Core value event | Ticket được giải quyết và không bị mở lại hoặc khách không phải liên hệ lại trong cửa sổ quan sát. |
+| Core value event | Ticket được giải quyết, không bị mở lại và khách không phải liên hệ lại trong cửa sổ quan sát. |
 
 ## Core Action Card
 
@@ -26,7 +26,7 @@
 | Preconditions | Có ticket cần xử lý, thông tin liên quan để đối chiếu và bản nháp AI hoặc nội dung phản hồi để nhân viên rà soát. |
 | Completion rule | Phản hồi đã được nhân viên rà soát, trực tiếp trả lời yêu cầu theo thông tin sẵn có và gửi thành công, gắn với ticket. |
 | Core value | Xử lý yêu cầu nhanh hơn mà vẫn giúp khách nhận phản hồi chính xác, có hướng giải quyết. |
-| Evidence of value | Ticket được đánh dấu đã giải quyết và không bị mở lại/khách không liên hệ lại trong cửa sổ quan sát đã thống nhất. |
+| Evidence of value | Ticket được đánh dấu đã giải quyết, không bị mở lại và khách không liên hệ lại trong cửa sổ quan sát đã thống nhất. |
 | Candidate event | `support_response_sent` — ghi nhận ticket, người gửi và trạng thái rà soát; event này ghi nhận hành vi, không tự chứng minh ticket có giá trị. |
 
 ## Tự kiểm 5 tiêu chí
@@ -90,7 +90,7 @@ Kết luận cadence điền đủ nguyên mẫu; phần “vì” dựa trên t
 | Start event | `actionable_ticket_assigned`: lần đầu nhân viên được giao một ticket đến cần phản hồi. Đây là lúc bắt đầu hành trình use case, không phải login/mở app. |
 | Activation event | `support_response_sent` đầu tiên: nhân viên đã rà soát/chỉnh sửa, gửi phản hồi trực tiếp trả lời ticket và phản hồi được lưu thành công. Đây là first core action; tự nó chưa chứng minh ticket có giá trị. |
 | Time window | Từ lúc start event đến hết ca làm việc đầu tiên của nhân viên. Đây là ngưỡng vận hành tạm tính, không phải SLA hay benchmark; cần xác nhận với lịch xử lý thực tế. |
-| Value confirmation | `qualified_ticket_resolution`: ticket được đánh dấu giải quyết, phản hồi đạt tiêu chuẩn chất lượng bên dưới và không bị mở lại/khách không liên hệ lại trong 7 ngày lịch sau khi giải quyết. Vì cần chờ kết quả và cửa sổ theo dõi, đây là xác nhận trễ; 7 ngày là giả định cần kiểm tra, không phải benchmark. |
+| Value confirmation | `qualified_ticket_resolution`: ticket được đánh dấu giải quyết, phản hồi đạt tiêu chuẩn chất lượng bên dưới, không bị mở lại và khách không liên hệ lại trong 7 ngày lịch sau khi giải quyết. Vì cần chờ kết quả và cửa sổ theo dõi, đây là xác nhận trễ; 7 ngày là giả định cần kiểm tra, không phải benchmark. |
 
 ## Engagement — góc đo Breadth
 
@@ -102,7 +102,7 @@ Kết luận cadence điền đủ nguyên mẫu; phần “vì” dựa trên t
 
 **NSM đề xuất:** Số **ticket duy nhất được giải quyết đạt tiêu chuẩn chất lượng trên mỗi nhân viên tuyến đầu, tính khi từng ticket hoàn tất vòng đời xử lý tự nhiên** (tổng hợp qua cohort ticket đến; không áp lịch ngày/tuần làm cadence chính).
 
-**Công thức:** `COUNT(DISTINCT ticket_id)` thỏa đồng thời: (1) nhân viên đã gửi phản hồi cuối cùng sau rà soát, trực tiếp trả lời yêu cầu và dựa trên thông tin sẵn có; (2) ticket được đánh dấu đã giải quyết; (3) kiểm tra QA xác nhận phản hồi liên quan và có căn cứ; (4) ticket không bị mở lại hoặc khách không liên hệ lại trong 7 ngày lịch sau khi giải quyết.
+**Công thức:** `COUNT(DISTINCT ticket_id)` theo từng `user_id` của nhân viên gửi phản hồi, với các ticket thỏa đồng thời: (1) nhân viên đã gửi phản hồi cuối cùng sau rà soát, trực tiếp trả lời yêu cầu và dựa trên thông tin sẵn có; (2) ticket được đánh dấu đã giải quyết; (3) kiểm tra QA xác nhận phản hồi liên quan và có căn cứ; (4) ticket không bị mở lại và khách không liên hệ lại trong 7 ngày lịch sau khi giải quyết.
 
 - **Unit of value:** một ticket được giải quyết có chất lượng.
 - **Quality threshold:** đủ bốn điều kiện trên; tiêu chuẩn QA và cửa sổ 7 ngày là đề xuất cần xác nhận, không phải dữ kiện/benchmark đã biết.
@@ -196,7 +196,7 @@ Hướng tăng có nghĩa là nhiều ticket hơn đạt chuẩn value, không c
 | `ticket_resolved` | **State change:** ticket thực sự chuyển sang trạng thái resolved. Đây là điều kiện của NSM, chưa đủ để khẳng định value. | Khi trạng thái resolved được lưu; ghi nhận transition thực tế từ trạng thái chưa resolved. | NSM — điều kiện resolved; Counter-metric — mẫu số ticket resolved đủ 7 ngày theo dõi. |
 | `ticket_reopened` | **Counter:** ticket đã resolved thực sự chuyển lại sang trạng thái mở trong cửa sổ theo dõi. | Khi transition reopen được lưu; ghi một lần cho mỗi transition/ticket và giữ timestamp. | Counter-metric: “Tỷ lệ ticket bị mở lại hoặc khách liên hệ lại trong 7 ngày” — tử số đếm ticket duy nhất có ít nhất một lần reopen, không đếm số transition. |
 | `customer_recontact_received` | **Counter:** khách thực sự gửi liên hệ tiếp theo được liên kết với ticket đã resolved; không suy diễn từ trạng thái hoặc nội dung AI. | Khi hệ thống nhận và liên kết một liên hệ mới trong 7 ngày sau resolve; cần khả năng nối liên hệ qua kênh liên quan. | Counter-metric: “Tỷ lệ ticket bị mở lại hoặc khách liên hệ lại trong 7 ngày” — tử số ticket có recontact; một ticket chỉ tính một lần dù có nhiều liên hệ, reopen hoặc cả hai. |
-| `qualified_ticket_resolution` | **Derived value:** ticket đã resolved, QA xác nhận phản hồi liên quan/có căn cứ, và hết đủ 7 ngày không reopen hoặc recontact. Đây mới là event value; không đồng nhất với output AI hay `support_response_sent`. | Sau khi hết cửa sổ 7 ngày tính từ resolve, xác nhận đủ điều kiện QA và không có counter-event; ghi tối đa một lần cho mỗi `ticket_id`. | NSM — đếm ticket đạt chất lượng; Retention — Return event trên ticket tiếp theo. |
+| `qualified_ticket_resolution` | **Derived value:** ticket đã resolved, QA xác nhận phản hồi liên quan/có căn cứ, và hết đủ 7 ngày không reopen và không recontact. Đây mới là event value; không đồng nhất với output AI hay `support_response_sent`. | Sau khi hết cửa sổ 7 ngày tính từ resolve, xác nhận đủ điều kiện QA và không có counter-event; ghi tối đa một lần cho mỗi `ticket_id`. | NSM — đếm ticket đạt chất lượng; Retention — Return event trên ticket tiếp theo. |
 
 ## Khoảng trống tracking cần xử lý
 
@@ -221,7 +221,7 @@ Các ID và timestamp này là yêu cầu cho schema đề xuất, chưa đượ
 ## Tiêu chí nghiệm thu
 
 1. **Với mỗi `user_id`, `ticket_id` và `response_id`, khi nhân viên gửi phản hồi đã rà soát, chỉ ghi `support_response_sent` khi `review_id` đã hoàn tất và hệ thống xác nhận gửi thành công; lỗi gửi, click, reload hoặc retry cùng `response_id` không tạo event thành công trùng.**
-2. **Với mỗi `ticket_id`, khi ticket chuyển sang resolved, chỉ ghi `ticket_resolved` cho transition đã lưu; reload/autosave không tạo transition hoặc event thứ hai. `qualified_ticket_resolution` chỉ được ghi một lần sau đủ 7 ngày nếu QA đạt và không có `ticket_reopened`/`customer_recontact_received`; nếu thiếu điều kiện thì không ghi.**
+2. **Với mỗi `ticket_id`, khi ticket chuyển sang resolved, chỉ ghi `ticket_resolved` cho transition đã lưu; reload/autosave không tạo transition hoặc event thứ hai. `qualified_ticket_resolution` chỉ được ghi một lần sau đủ 7 ngày nếu QA đạt, không có `ticket_reopened` và không có `customer_recontact_received`; nếu thiếu điều kiện thì không ghi.**
 3. **Với mỗi `ticket_id` và `draft_id`, khi AI hoàn tất và lưu một draft version, ghi tối đa một `ai_draft_generated`; retry cùng generation id không tạo bản ghi trùng, còn generation lỗi/đang chạy thì không ghi event hoàn tất.**
 4. **Với mỗi `transition_id`/`contact_id`, chỉ ghi `ticket_reopened` hoặc `customer_recontact_received` sau khi transition/liên hệ thực sự được lưu và liên kết ticket; retry cùng ID không tạo event trùng. Counter-metric đếm ticket duy nhất, dù có nhiều lần liên hệ/reopen.**
 
@@ -255,3 +255,7 @@ Các ID và timestamp này là yêu cầu cho schema đề xuất, chưa đượ
 ## Kết luận Gate 5
 
 **Gate 5 đạt.** Đã đối chiếu đủ 7 câu và xử lý khoảng trống về thuộc tính nối event để metric có thể tính theo định nghĩa. Không đổi core action, cadence, retention definition, metric hay event set; các event, QA, recontact và ngưỡng/cửa sổ và lịch ca cần thiết vẫn được ghi rõ là đề xuất/nguồn dữ liệu cần xác nhận, không xem là instrumentation đã tồn tại.
+
+## Rationale khi hợp nhất bản nộp
+
+Các câu mô tả value trước đây dùng “hoặc” hoặc dấu “/” giữa điều kiện không mở lại và không liên hệ lại, dễ bị hiểu là chỉ cần đạt một điều kiện. Bản chính viết rõ **cả hai điều kiện đều phải đạt** trong cùng cửa sổ theo dõi, nhất quán với counter-metric đếm ticket có reopen **hoặc** recontact và tiêu chí nghiệm thu event value. Công thức NSM cũng ghi rõ nhóm theo `user_id` để đúng đơn vị “trên mỗi nhân viên”; ngưỡng 7 ngày, QA và khả năng nối dữ liệu vẫn là giả định cần xác nhận.
